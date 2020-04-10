@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "mpi.h"
-
+// allocate 2d_char array contagious 
 char **alloc_2d_char(int lines, int line_size) {
     int i,j;
     char *data = (char *)malloc(lines*line_size*sizeof(char));
@@ -24,6 +24,7 @@ char **ReadFromFile(int start , int end,char **result)
 	char delim []= " ";
     // printf("Enter the Query : ");
     char q[] = "photosynthesis";
+    // loop for files
     for(i=start; i<=end; ++i)
     {
         sprintf(fileName, "CS471-Parallel-A2-2020//Aristo-Mini-Corpus//Aristo-Mini-Corpus P-%d.txt", i);
@@ -33,28 +34,35 @@ char **ReadFromFile(int start , int end,char **result)
 
         char line[256];
         int c=1;
+	// read lines from file 
         while (fgets(line, sizeof(line), f))
         {
            // printf("%s\n",line);
             bool is_found = false;
+	    // get query token with space delimiter 
             char *qstr = strtok(q, delim);
+	    // loop for each token 
             while(qstr != NULL){
+		// check if token in thise line or not 
                 char *pch = strstr(line,qstr);
                 if(!pch){
                     is_found = false;
                     break;
                 }
                 is_found = true;
+	        // get next token or next word 
                 qstr = strtok(NULL, delim);
             }
             if(is_found){
                //printf("file number %d line number %d \n",i,c);
                //printf("%s\n",line);
+	       // if query in line put line in result array 
                for(j=0;j<strlen(line);++j){
                    result[count][j] = line[j];
                }
                count++;
             }
+		// update the strtok with same string 
 			strcpy(q,"photosynthesis");
             c++;
         }
@@ -117,11 +125,13 @@ int main(int argc , char * argv[])
         int i,j;
 		
 		int index = 1;
+		// loop for sending the start file index to each slaive
 		for( dest = 1; dest < p ; dest++){ 
 		    MPI_Send(&index,1, MPI_INT, dest, tag, MPI_COMM_WORLD);
 			
 			index += num_of_files_sent;
 		}
+		// recive result from each slaive
 		for(source = 1; source < p ; source++){ 
 			MPI_Recv(&(selive_result[0][0]),num_of_files_sent*file_lines*line_size, MPI_CHAR, source, tag, MPI_COMM_WORLD, &status);
 		    MPI_Recv(&count,1, MPI_INT,source,tag, MPI_COMM_WORLD,&status);
@@ -135,6 +145,7 @@ int main(int argc , char * argv[])
 		}
 		//printf("The final count : %d\n\n",count);
 		//printf("The Search Result : %d\n\n",searchResult);
+		// handel the reminder file 
 		if(reminder > 0){
 		   char **reminder_result;
 		   reminder_result = alloc_2d_char(reminder*file_lines,line_size);
